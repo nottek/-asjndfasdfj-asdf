@@ -368,7 +368,6 @@ function Library:AddWindow(options)
 	}
 
 	-- Custom theme setup
-    table.insert(Library.Windows, Window)
 
 	if options.theme ~= nil then
 		for i, v in next, options.theme do
