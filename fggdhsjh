@@ -362,6 +362,12 @@ function Library:LoadConfig(fileName)
     
     local filePath = self.Settings.ConfigPath.."/"..fileName..(string.sub(fileName, -5) ~= ".json" and ".json" or "")
     
+    -- Debug prints to check paths and file existence
+    print("ConfigPath: " .. tostring(self.Settings.ConfigPath))
+    print("fileName: " .. tostring(fileName))
+    print("filePath: " .. filePath)
+    print("isfile(filePath): " .. tostring(isfile(filePath)))
+    
     if not isfile(filePath) then
         return false, "Config file doesn't exist"
     end
@@ -436,15 +442,22 @@ end
 
 function Library:GetConfigs()
     if not self.Settings.ConfigPath then
+        print("ConfigPath not set")
         return {}
     end
+    
+    print("Checking folder: " .. self.Settings.ConfigPath)
+    print("isfolder: " .. tostring(isfolder(self.Settings.ConfigPath)))
     
     local configs = {}
     
     if isfolder(self.Settings.ConfigPath) then
-        for _, file in pairs(listfiles(self.Settings.ConfigPath)) do
+        local files = listfiles(self.Settings.ConfigPath)
+        print("Files in folder: " .. table.concat(files, ", "))
+        for _, file in pairs(files) do
             if string.find(file, ".json") then
                 local fileName = file:match("([^/]+)$")
+                print("Found config: " .. fileName)
                 configs[#configs + 1] = fileName
             end
         end
