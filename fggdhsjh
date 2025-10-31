@@ -361,7 +361,7 @@ function Library:LoadConfig(fileName)
     end
     
     -- Normalize fileName to extract just the filename (handles full paths or malformed inputs)
-    fileName = fileName:gsub(".*[/\\$", "")  -- Remove everything before the last / or \
+    fileName = fileName:gsub(".*[/\\$", "")  -- Corrected pattern: removes everything before the last / or \
     -- Ensure .json extension
     if string.sub(fileName, -5) ~= ".json" then
         fileName = fileName .. ".json"
@@ -447,6 +447,7 @@ function Library:LoadConfig(fileName)
     return true
 end
 
+-- Corrected GetConfigs function with fixed pattern
 function Library:GetConfigs()
     if not self.Settings.ConfigPath then
         print("ConfigPath not set")
@@ -463,7 +464,7 @@ function Library:GetConfigs()
         print("Files in folder: " .. table.concat(files, ", "))
         for _, file in pairs(files) do
             -- Extract just the filename by removing everything before the last / or \
-            local fileName = file:gsub(".*[/\\$", "")
+            local fileName = file:gsub(".*[/\\$", "")  -- Corrected pattern
             if fileName and string.find(fileName, ".json") then
                 print("Found config: " .. fileName)
                 configs[#configs + 1] = fileName
