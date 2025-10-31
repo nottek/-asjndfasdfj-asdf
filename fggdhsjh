@@ -360,11 +360,18 @@ function Library:LoadConfig(fileName)
         return false, "Config path not set"
     end
     
-    local filePath = self.Settings.ConfigPath.."/"..fileName..(string.sub(fileName, -5) ~= ".json" and ".json" or "")
+    -- Normalize fileName to extract just the filename (handles full paths or malformed inputs)
+    fileName = fileName:match("[^/\\$+$") or fileName
+    -- Ensure .json extension
+    if string.sub(fileName, -5) ~= ".json" then
+        fileName = fileName .. ".json"
+    end
     
-    -- Debug prints to check paths and file existence
+    local filePath = self.Settings.ConfigPath .. "/" .. fileName
+    
+    -- Debug prints (remove after fixing)
     print("ConfigPath: " .. tostring(self.Settings.ConfigPath))
-    print("fileName: " .. tostring(fileName))
+    print("Normalized fileName: " .. tostring(fileName))
     print("filePath: " .. filePath)
     print("isfile(filePath): " .. tostring(isfile(filePath)))
     
@@ -380,7 +387,7 @@ function Library:LoadConfig(fileName)
         return false, "Failed to parse config file"
     end
     
-    -- Apply the loaded config
+    -- Apply the loaded config (rest of the function remains the same)
     for _, window in pairs(self.Windows or {}) do
         for _, tab in pairs(window.Tabs or {}) do
             -- Apply flags
@@ -455,7 +462,7 @@ function Library:GetConfigs()
         local files = listfiles(self.Settings.ConfigPath)
         print("Files in folder: " .. table.concat(files, ", "))
         for _, file in pairs(files) do
-            -- Updated regex to match until the last / or \ (handles both separators)
+            -- Extract just the filename, handling both / and \ separators
             local fileName = file:match("[^/\\$+$")
             if fileName and string.find(fileName, ".json") then
                 print("Found config: " .. fileName)
