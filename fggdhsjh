@@ -464,7 +464,7 @@ function Library:GetConfigs()
         print("Files in folder: " .. table.concat(files, ", "))
         for _, file in pairs(files) do
             -- Extract just the filename by removing everything before the last / or \
-            local fileName = file:gsub(".*[\\/]", "")
+            local fileName = file:match("([^/\\]+)$")
             if fileName and string.find(fileName, ".json") then
                 print("Found config: " .. fileName)
                 configs[#configs + 1] = fileName
