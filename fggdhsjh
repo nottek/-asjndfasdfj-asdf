@@ -286,6 +286,194 @@ function Library:Notify(options, callback)
 	return Notification
 end
 
+function Library:SaveConfig(fileName)
+    if not self.Settings.ConfigPath then
+        return false, "Config path not set"
+    end
+    
+    local config = {
+        Flags = {},
+        Binds = {},
+        Sliders = {},
+        Pickers = {}
+    }
+    
+    -- Collect all settings from the window
+    for _, window in pairs(self.Windows or {}) do
+        for _, tab in pairs(window.Tabs or {}) do
+            -- Collect flags
+            for flag, value in pairs(tab.Flags or {}) do
+                config.Flags[flag] = value
+            end
+            
+            -- Collect other settings from sections
+            for _, section in pairs(tab.Sections or {}) do
+                for _, item in pairs(section.List or {}) do
+                    local flag = item.Flag or item.Name
+                    
+                    if item.Type == "Bind" then
+                        config.Binds[flag] = item.Bind.Name
+                        
+                    elseif item.Type == "Slider" then
+                        config.Sliders[flag] = item.Value
+                        
+                    elseif item.Type == "Picker" then
+                        config.Pickers[flag] = {
+                            Color = item.Color,
+                            Rainbow = item.Rainbow
+                        }
+                        
+                    elseif item.Type == "SubSection" then
+                        for _, item2 in pairs(item.List or {}) do
+                            local flag2 = item2.Flag or item2.Name
+                            
+                            if item2.Type == "Bind" then
+                                config.Binds[flag2] = item2.Bind.Name
+                                
+                            elseif item2.Type == "Slider" then
+                                config.Sliders[flag2] = item2.Value
+                                
+                            elseif item2.Type == "Picker" then
+                                config.Pickers[flag2] = {
+                                    Color = item2.Color,
+                                    Rainbow = item2.Rainbow
+                                }
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    
+    local filePath = self.Settings.ConfigPath.."/"..fileName..(string.sub(fileName, -5) ~= ".json" and ".json" or "")
+    
+    local success, err = pcall(function()
+        writefile(filePath, HS:JSONEncode(config))
+    end)
+    
+    return success, err
+end
+
+function Library:LoadConfig(fileName)
+    if not self.Settings.ConfigPath then
+        return false, "Config path not set"
+    end
+    
+    local filePath = self.Settings.ConfigPath.."/"..fileName..(string.sub(fileName, -5) ~= ".json" and ".json" or "")
+    
+    if not isfile(filePath) then
+        return false, "Config file doesn't exist"
+    end
+    
+    local success, config = pcall(function()
+        return HS:JSONDecode(readfile(filePath))
+    end)
+    
+    if not success or not config then
+        return false, "Failed to parse config file"
+    end
+    
+    -- Apply the loaded config
+    for _, window in pairs(self.Windows or {}) do
+        for _, tab in pairs(window.Tabs or {}) do
+            -- Apply flags
+            for flag, value in pairs(config.Flags or {}) do
+                if tab.Flags[flag] ~= nil then
+                    -- Find the control with this flag and update it
+                    for _, section in pairs(tab.Sections or {}) do
+                        for _, item in pairs(section.List or {}) do
+                            local itemFlag = item.Flag or item.Name
+                            
+                            if itemFlag == flag then
+                                if item.Type == "Toggle" then
+                                    item:Set(value)
+                                elseif item.Type == "Bind" and config.Binds[flag] then
+                                    item:Set(Enum.KeyCode[config.Binds[flag]])
+                                elseif item.Type == "Slider" and config.Sliders[flag] then
+                                    item:Set(config.Sliders[flag])
+                                elseif item.Type == "Picker" and config.Pickers[flag] then
+                                    local picker = config.Pickers[flag]
+                                    item:Set(picker.Color.R, picker.Color.G, picker.Color.B)
+                                    if picker.Rainbow then
+                                        item:ToggleRainbow(picker.Rainbow)
+                                    end
+                                end
+                                break
+                            end
+                            
+                            if item.Type == "SubSection" then
+                                for _, item2 in pairs(item.List or {}) do
+                                    local itemFlag2 = item2.Flag or item2.Name
+                                    
+                                    if itemFlag2 == flag then
+                                        if item2.Type == "Toggle" then
+                                            item2:Set(value)
+                                        elseif item2.Type == "Bind" and config.Binds[flag] then
+                                            item2:Set(Enum.KeyCode[config.Binds[flag]])
+                                        elseif item2.Type == "Slider" and config.Sliders[flag] then
+                                            item2:Set(config.Sliders[flag])
+                                        elseif item2.Type == "Picker" and config.Pickers[flag] then
+                                            local picker = config.Pickers[flag]
+                                            item2:Set(picker.Color.R, picker.Color.G, picker.Color.B)
+                                            if picker.Rainbow then
+                                                item2:ToggleRainbow(picker.Rainbow)
+                                            end
+                                        end
+                                        break
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    
+    return true
+end
+
+function Library:GetConfigs()
+    if not self.Settings.ConfigPath then
+        return {}
+    end
+    
+    local configs = {}
+    
+    if isfolder(self.Settings.ConfigPath) then
+        for _, file in pairs(listfiles(self.Settings.ConfigPath)) do
+            if string.find(file, ".json") then
+                local fileName = file:match("([^/]+)$")
+                configs[#configs + 1] = fileName
+            end
+        end
+    end
+    
+    return configs
+end
+
+function Library:DeleteConfig(fileName)
+    if not self.Settings.ConfigPath then
+        return false, "Config path not set"
+    end
+    
+    local filePath = self.Settings.ConfigPath.."/"..fileName..(string.sub(fileName, -5) ~= ".json" and ".json" or "")
+    
+    if not isfile(filePath) then
+        return false, "Config file doesn't exist"
+    end
+    
+    local success, err = pcall(function()
+        delfile(filePath)
+    end)
+    
+    return success, err
+end
+
+-- Store windows for config management
+Library.Windows = {}
+
 function Library:AddWindow(options)
 	assert(options, "No options data assigned to Window")
 
